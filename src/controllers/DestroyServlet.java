@@ -1,7 +1,6 @@
 package controllers;
 
 import java.io.IOException;
-import java.sql.Timestamp;
 
 import javax.persistence.EntityManager;
 import javax.servlet.ServletException;
@@ -12,18 +11,17 @@ import javax.servlet.http.HttpServletResponse;
 
 import models.Task;
 import utils.DBUtil;
-
 /**
- * Servlet implementation class CreateServlet
+ * Servlet implementation class DestroyServlet
  */
-@WebServlet("/create")
-public class CreateServlet extends HttpServlet {
+@WebServlet("/destroy")
+public class DestroyServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public CreateServlet() {
+    public DestroyServlet() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -36,20 +34,19 @@ public class CreateServlet extends HttpServlet {
         if(_token != null && _token.equals(request.getSession().getId())) {
             EntityManager em = DBUtil.createEntityManager();
 
-            Task m = new Task();
-
-            String content = request.getParameter("content");
-            m.setContent(content);
-
-            Timestamp currentTime = new Timestamp(System.currentTimeMillis());
-            m.setCreated_at(currentTime);
-            m.setUpdated_at(currentTime);
+            // セッションスコープからメッセージのIDを取得して
+            // 該当のIDのメッセージ1件のみをデータベースから取得
+            Task m = em.find(Task.class, (Integer)(request.getSession().getAttribute("task_id")));
 
             em.getTransaction().begin();
-            em.persist(m);
+            em.remove(m);       // データ削除
             em.getTransaction().commit();
             em.close();
 
+            // セッションスコープ上の不要になったデータを削除
+            request.getSession().removeAttribute("task_id");
+
+            // indexページへリダイレクト
             response.sendRedirect(request.getContextPath() + "/index");
         }
     }
